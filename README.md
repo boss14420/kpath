@@ -1,4 +1,7 @@
-<<<<<<< HEAD
+=======
+kpath
+=====
+
 #Build
 
     make # make release versions
@@ -18,9 +21,3 @@
 ## generate graph file
 
     ./graph_generate.py **num_vertices** **num_edges** **graph_file**
-=======
-kpath
-=====
-
-Assignment of Parallel Programming course
->>>>>>> 3548d75b58fa3f7cd13b2f55238d23873fe5f6c6
