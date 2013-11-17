@@ -77,19 +77,21 @@ Id start_vertex, finish_vertex;
 #endif // RECURSIVE
 
 #ifndef NDEBUG
-inline void increase_num_paths(size_t &num_paths, PathType &path) {
+void increase_num_paths(size_t &num_paths, PathType &path) {
 #else
 inline void increase_num_paths(size_t &num_paths) {
 #endif
     ++num_paths;
+
+    // print result in debug mode
 #ifndef NDEBUG
 #ifdef _OPENMP
 #pragma omp critical
     {
 #endif
-    std::cerr << "Path " << std::setw(3) << num_paths << ": ";
-    for(auto u : path) std::cerr << std::setw(2) << u << ' ';
-    std::cerr << '\n';
+        std::cerr << "Path " << std::setw(3) << num_paths << ": ";
+        for(auto u : path) std::cerr << std::setw(2) << u << ' ';
+        std::cerr << '\n';
 #ifdef _OPENMP
     }
 #endif
@@ -126,35 +128,35 @@ size_t backtracking(AdjacencyList const &adj_list, Id start_vertex,
                     size_t current_length, std::vector<bool> &visited)
 #endif // NDEBUG
 {
-    typedef decltype(adj_list[0].begin()) edge_iterator;
-    typedef std::tuple<Id, edge_iterator> element_type;
+    typedef decltype(adj_list[0].begin()) adjacency_iterator;
+    typedef std::tuple<Id, adjacency_iterator> element_type;
     std::vector<element_type> Stack(final_length + 2);
     Stack[1] = element_type { start_vertex, adj_list[start_vertex].begin() };
 
     size_t num_paths = 0;
     Id current_vertex = start_vertex, next_vertex;
-    edge_iterator ei = adj_list[start_vertex].begin();
+    adjacency_iterator ai = adj_list[start_vertex].begin();
     auto si = Stack.begin() + 1;
 
     #define RESTORE_STATE visited[current_vertex] = false; \
-                          std::tie(current_vertex, ei) = *--si; \
+                          std::tie(current_vertex, ai) = *--si; \
                           --current_length
 
     while (si > Stack.begin()) {
-        if (ei != adj_list[current_vertex].end()) {
-            next_vertex = *ei; ++ei;
+        if (ai != adj_list[current_vertex].end()) {
+            next_vertex = *ai; ++ai;
             if (!visited[next_vertex]) {
                 if (next_vertex != finish_vertex 
                         && current_length != final_length) 
                 {
-                    // backup ei
-                    std::get<1>(*si) = ei;
+                    // backup ai
+                    std::get<1>(*si) = ai;
 
-                    // backtrack
+                    // try next
                     current_vertex = next_vertex;
                     visited[current_vertex] = true;
-                    ei = adj_list[current_vertex].begin();
-                    *++si = make_tuple(current_vertex, ei);
+                    ai = adj_list[current_vertex].begin();
+                    *++si = make_tuple(current_vertex, ai);
                     ++current_length;
 
                 } else if (next_vertex == finish_vertex 
@@ -170,11 +172,13 @@ size_t backtracking(AdjacencyList const &adj_list, Id start_vertex,
                     increase_num_paths(num_paths);
 #endif
 
+                    // backtrack
                     RESTORE_STATE;
                 } 
             } 
 
         } else {
+            // backtrack
             RESTORE_STATE;
         }
     }
@@ -250,16 +254,13 @@ size_t scheduler(AdjacencyList const &adj_list, Id start_vertex,
 #pragma omp parallel // reduction(+:npaths)
     {
 #pragma omp single
-        {
-            for (auto it = init_paths.begin(); it != init_paths.end(); ++it) {
+        for (auto it = init_paths.begin(); it != init_paths.end(); ++it) 
 #pragma omp task //shared(it)
-                { 
-                    auto _npaths = find_kpaths_task(adj_list, finish_vertex, 
-                                                    final_length, *it);
+        { 
+            auto _npaths = find_kpaths_task(adj_list, finish_vertex, 
+                                            final_length, *it);
 #pragma omp atomic update
-                    npaths += _npaths;
-                }
-            }
+            npaths += _npaths;
         }
     }
     
