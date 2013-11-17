@@ -1,10 +1,10 @@
 all: kpath kpath-parallel
 
-CC = gcc
-CXX = g++
+CC ?= gcc
+CXX ?= g++
 
 CXXFLAGS_BASE = -Wall -std=c++11 -pedantic-errors -pipe
-CXXFLAGS_DEBUG = $(CXXFLAGS_BASE) -g -pg
+CXXFLAGS_DEBUG = $(CXXFLAGS_BASE) -g #-pg
 CXXFLAGS = $(CXXFLAGS_BASE) -DNDEBUG -O3 -march=native -fomit-frame-pointer
 
 kpath: kpath.o
