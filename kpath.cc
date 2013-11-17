@@ -128,18 +128,21 @@ size_t backtracking(AdjacencyList const &adj_list, Id start_vertex,
 {
     typedef decltype(adj_list[0].begin()) edge_iterator;
     typedef std::tuple<Id, edge_iterator> element_type;
-    std::vector<element_type> Stack = { element_type { start_vertex, 
-                                          adj_list[start_vertex].begin() } };
-    Stack.reserve(final_length+1);
+    std::vector<element_type> Stack(final_length + 2);
+    Stack[1] = element_type { start_vertex, adj_list[start_vertex].begin() };
 
     size_t num_paths = 0;
     Id current_vertex = start_vertex, next_vertex;
     edge_iterator ei = adj_list[start_vertex].begin();
-    auto si = Stack.begin();
+    auto si = Stack.begin() + 1;
 
-    while (si >= Stack.begin()) {
+    #define RESTORE_STATE visited[current_vertex] = false; \
+                          std::tie(current_vertex, ei) = *--si; \
+                          --current_length
+
+    while (si > Stack.begin()) {
         if (ei != adj_list[current_vertex].end()) {
-            next_vertex = *ei;
+            next_vertex = *ei; ++ei;
             if (!visited[next_vertex]) {
                 if (next_vertex != finish_vertex 
                         && current_length != final_length) 
@@ -159,7 +162,7 @@ size_t backtracking(AdjacencyList const &adj_list, Id start_vertex,
                 {
 #ifndef NDEBUG
                     auto _path = path;
-                    for (auto _si = Stack.begin() + 1; _si != si; ++_si)
+                    for (auto _si = Stack.begin() + 2; _si <= si; ++_si)
                         _path.push_back(std::get<0>(*_si));
                     _path.push_back(finish_vertex);
                     increase_num_paths(num_paths, _path);
@@ -167,26 +170,12 @@ size_t backtracking(AdjacencyList const &adj_list, Id start_vertex,
                     increase_num_paths(num_paths);
 #endif
 
-                    // restore
-                    visited[current_vertex] = false;
-                    std::tie(current_vertex, ei) = *--si;
-                    ++ei;
-                    --current_length;
-                } else
-                    ++ei;
-            } else
-                ++ei;
+                    RESTORE_STATE;
+                } 
+            } 
 
         } else {
-            --si;
-
-            // restore
-            if (si >= Stack.begin()) {
-                visited[current_vertex] = false;
-                std::tie(current_vertex, ei) = *si;
-                ++ei;
-                --current_length;
-            }
+            RESTORE_STATE;
         }
     }
 
