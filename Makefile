@@ -5,7 +5,7 @@ CXX ?= g++
 
 CXXFLAGS_BASE = -Wall -std=c++11 -pedantic-errors -pipe
 CXXFLAGS_DEBUG = $(CXXFLAGS_BASE) -g #-pg
-CXXFLAGS = $(CXXFLAGS_BASE) -DNDEBUG -O3 -march=native -fomit-frame-pointer
+CXXFLAGS = $(CXXFLAGS_BASE) -DNDEBUG -Ofast -march=native -fomit-frame-pointer
 
 kpath: kpath.o
 	$(CXX) $(CXXFLAGS) -o $@ $<
