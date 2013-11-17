@@ -276,12 +276,13 @@ size_t scheduler(AdjacencyList const &adj_list, Id start_vertex, Id finish_verte
     {
 #pragma omp single
         {
-            for (auto &initial_path : init_paths)
-#pragma omp task shared(initial_path)
-            { 
-                auto _npaths = find_kpaths_task(adj_list, finish_vertex, final_length, initial_path);
+            for (auto it = init_paths.begin(); it != init_paths.end(); ++it) {
+#pragma omp task //shared(it)
+                { 
+                    auto _npaths = find_kpaths_task(adj_list, finish_vertex, final_length, *it);
 #pragma omp critical
-                npaths += _npaths;
+                    npaths += _npaths;
+                }
             }
         }
     }
