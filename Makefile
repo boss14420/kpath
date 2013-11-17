@@ -31,16 +31,29 @@ kpath-parallel.o: kpath.cc
 kpath-parallel-debug.o: kpath.cc
 	$(CXX) $(CXXFLAGS_DEBUG) -fopenmp -c -o $@ $<
 
+kpath-noloadbalancing: kpath-noloadbalancing.o
+	$(CXX) $(CXXFLAGS) -DNO_LOAD_BALANCING -fopenmp -o $@ $<
+
+kpath-noloadbalancing.o: kpath.cc
+	$(CXX) $(CXXFLAGS) -DNO_LOAD_BALANCING -fopenmp -c -o $@ $<
+
+kpath-noloadbalancing-debug: kpath-noloadbalancing-debug.o
+	$(CXX) $(CXXFLAGS_DEBUG) -DNO_LOAD_BALANCING -fopenmp -o $@ $<
+
+kpath-noloadbalancing-debug.o: kpath.cc
+	$(CXX) $(CXXFLAGS_DEBUG) -DNO_LOAD_BALANCING -fopenmp -c -o $@ $<
 
 .PHONY: clean
 
 clean:
 	rm -rf *.o
 
-release: kpath kpath-parallel
+release: kpath kpath-parallel kpath-noloadbalancing
 
-debug: kpath-debug kpath-parallel-debug
+debug: kpath-debug kpath-parallel-debug kpath-noloadbalancing-debug
 
-serial: kpath kpath-debug
+serial: kpath kpath-debug kpath-noloadbalancing-debug
 
 parallel: kpath-parallel kpath-parallel-debug
+
+noloadbalancing: kpath-noloadbalancing kpath-noloadbalancing-debug

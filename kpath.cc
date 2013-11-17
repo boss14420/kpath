@@ -222,6 +222,7 @@ size_t find_kpaths_task(AdjacencyList const &adj_list, Id finish_vertex,
 #endif
 
 #ifdef _OPENMP
+#ifndef NO_LOAD_BALANCING
 size_t scheduler(AdjacencyList const &adj_list, Id start_vertex, 
                  Id finish_vertex, Id final_length)
 {
@@ -263,6 +264,23 @@ size_t scheduler(AdjacencyList const &adj_list, Id start_vertex,
     
     return npaths;
 }
+
+#else // NO LOAD BALANCING
+size_t scheduler(AdjacencyList const &adj_list, Id start_vertex, 
+                 Id finish_vertex, Id final_length)
+{
+#define ADJ adj_list[start_vertex]
+    size_t npaths = 0;
+#pragma omp parallel for reduction(+:npaths)
+    for (size_t i = 0; i < ADJ.size(); ++i) {
+        PathType path { start_vertex, ADJ[i] };
+        npaths += find_kpaths_task(adj_list, finish_vertex, final_length, path);
+    }
+
+    return npaths;
+}
+#endif // NO_LOAD_BALANCING
+
 #endif // _OPENMP
 
 void read_file(char const *filename, AdjacencyList &adj_list)
