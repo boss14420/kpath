@@ -270,6 +270,11 @@ size_t scheduler(AdjacencyList const &adj_list, Id start_vertex,
                  Id finish_vertex, Id final_length)
 {
 #define ADJ adj_list[start_vertex]
+
+    // base case
+    if (final_length == 1)
+        return std::find(ADJ.begin(), ADJ.end(), finish_vertex) != ADJ.end();
+
     size_t npaths = 0;
 #pragma omp parallel for reduction(+:npaths)
     for (size_t i = 0; i < ADJ.size(); ++i) {
@@ -327,6 +332,9 @@ int main(int argc, char *argv[])
 
     AdjacencyList adj_list;
     read_file(argv[4], adj_list);
+
+    if (start_vertex >= adj_list.size() || finish_vertex >= adj_list.size() || final_length >= adj_list.size())
+        std::cerr << "Invalid input!\n";
 
 #ifdef _OPENMP
     PROCESS_TIME(auto npaths = scheduler(adj_list, start_vertex, finish_vertex, final_length), "Time: ");
