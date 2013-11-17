@@ -215,18 +215,32 @@ size_t find_kpaths_task(AdjacencyList const &adj_list, Id finish_vertex, size_t 
     std::vector<bool> visited(adj_list.size(), false);
     for (auto v : initial_path) visited[v] = true;
 #ifndef NDEBUG
+    static size_t num_tasks = 0;
+    size_t task_num = num_tasks++;
+#ifdef _OPENMP
+#pragma omp critical
+#endif // _OPENMP
+    {
+        std::cerr << "\nTask #" << task_num << ", initial_path: ";
+        for (auto v : initial_path) std::cerr << std::setw(2) << v << ' ';
+        std::cerr << '\n';
+    }
 #ifdef RECURSIVE
     backtracking(initial_path.size(), initial_path.back(), visited, num_paths, initial_path);
-#else
+#else 
     num_paths = backtracking_nonrecursive(adj_list, initial_path.back(), finish_vertex, final_length, initial_path.size(), visited, initial_path);
-#endif
-#else
+#endif // RECURSIVE
+#ifdef _OPENMP
+#pragma omp critical
+#endif // _OPENMP
+    std::cerr << "\nTask #" << task_num << ": " << num_paths << " paths\n";
+#else // NDEBUG
 #ifdef RECURSIVE
     backtracking(initial_path.size(), initial_path.back(), visited, num_paths);
 #else
     num_paths = backtracking_nonrecursive(adj_list, initial_path.back(), finish_vertex, final_length, initial_path.size(), visited);
-#endif
-#endif
+#endif // RECURSIVE
+#endif // NDEBUG
     return num_paths;
 }
 
