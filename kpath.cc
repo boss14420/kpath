@@ -39,14 +39,6 @@
     #include <omp.h>
 #endif
 
-#ifndef MAX_NUM_THREADS
-    #define MAX_NUM_THREADS 16
-#endif
-#define K_LIMIT 4
-#ifndef TASK_LIMIT
-    #define TASK_LIMIT 32
-#endif
-
 #define TID omp_get_thread_num()
 
 using std::size_t;
@@ -221,19 +213,23 @@ size_t find_kpaths_task(AdjacencyList const &adj_list, Id finish_vertex,
     return num_paths;
 }
 
+
+#ifndef INITIAL_LENGTH_LIMIT
+    #define INITIAL_LENGTH_LIMIT 4
+#endif
+#ifndef TASK_LIMIT
+    #define TASK_LIMIT 32
+#endif
+
 #ifdef _OPENMP
 size_t scheduler(AdjacencyList const &adj_list, Id start_vertex, 
                  Id finish_vertex, Id final_length)
 {
     std::deque<PathType> init_paths = { {start_vertex} }, tmp;
 
-    size_t path_length = 0;
-
-    bool changed = true;
-    while (init_paths.size() < TASK_LIMIT && changed) {
-        changed = false;
-        ++path_length;
-
+    size_t path_length = 1;
+    const size_t length_limit = std::min<size_t>(INITIAL_LENGTH_LIMIT, final_length);
+    while (init_paths.size() < TASK_LIMIT && path_length != length_limit) {
         for (auto &initial_path : init_paths) {
             auto last_vertex = initial_path.back();
             for (auto next_vertex : adj_list[last_vertex])
@@ -244,10 +240,11 @@ size_t scheduler(AdjacencyList const &adj_list, Id start_vertex,
                     initial_path.push_back(next_vertex);
                     tmp.push_back(initial_path);
                     initial_path.pop_back();
-                    changed = true;
                 }
         }
+
         init_paths = std::move(tmp);
+        ++path_length;
     }
 
     size_t npaths = 0;
