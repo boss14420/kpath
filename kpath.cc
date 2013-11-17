@@ -54,7 +54,7 @@ typedef size_t Id;
 typedef std::vector<std::vector<Id>> AdjacencyList;
 typedef std::deque<Id> PathType;
 
-#ifdef RECURSIVE
+#if 0 //RECURSIVE
 AdjacencyList adj_list;
 size_t num_vertices, num_edges;
 size_t final_length;
@@ -93,58 +93,43 @@ inline void increase_num_paths(size_t &num_paths) {
 #ifdef _OPENMP
     }
 #endif
-#endif
+#endif // NDEBUG
 }
 
-#ifdef RECURSIVE
-#ifndef NDEBUG
+#if 0 // RECURSIVE
 void backtracking(size_t path_length, Id current_vertex, std::vector<bool> &visited, size_t &num_paths, PathType &path)
-#else
-void backtracking(size_t path_length, Id current_vertex, std::vector<bool> &visited, size_t &num_paths)
-#endif // NDEBUG
 {
     for (auto next_vertex : adj_list[current_vertex]) {
         if (!VISITED[next_vertex]) {
-#ifndef NDEBUG
             path.push_back(next_vertex);
-#endif
             if (path_length == final_length && next_vertex == finish_vertex) {
-#ifndef NDEBUG
                 increase_num_paths(num_paths, path);
-#else
-                increase_num_paths(num_paths);
-#endif
             } else if (path_length != final_length && next_vertex != finish_vertex) {
                 VISITED[next_vertex] = true;
-#ifndef NDEBUG
                 backtracking(path_length + 1, next_vertex, visited, num_paths, path);    
-#else
-                backtracking(path_length + 1, next_vertex, visited, num_paths);    
-#endif
                 VISITED[next_vertex] = false;
             }
-#ifndef NDEBUG
             path.pop_back();
-#endif
         }
     }
 }
 #endif // RECURSIVE
 
-#ifndef RECURSIVE
 #ifndef NDEBUG
-//size_t backtracking_nonrecursive(size_t path_length, Id start_vertex, std::vector<bool> &visited, PathType &path)
-size_t backtracking_nonrecursive(AdjacencyList const &adj_list, Id start_vertex, Id finish_vertex, size_t final_length,
-                                 size_t current_length, std::vector<bool> &visited, PathType &path)
+size_t backtracking(AdjacencyList const &adj_list, Id start_vertex, 
+                    Id finish_vertex, size_t final_length, 
+                    size_t current_length, std::vector<bool> &visited, 
+                    PathType &path)
 #else
-//size_t backtracking_nonrecursive(size_t path_length, Id start_vertex, std::vector<bool> &visited)
-size_t backtracking_nonrecursive(AdjacencyList const &adj_list, Id start_vertex, Id finish_vertex, size_t final_length,
-                                 size_t current_length, std::vector<bool> &visited)
+size_t backtracking(AdjacencyList const &adj_list, Id start_vertex, 
+                    Id finish_vertex, size_t final_length,
+                    size_t current_length, std::vector<bool> &visited)
 #endif // NDEBUG
 {
     typedef decltype(adj_list[0].begin()) edge_iterator;
     typedef std::tuple<Id, edge_iterator> element_type;
-    std::vector<element_type> Stack = { element_type { start_vertex, adj_list[start_vertex].begin() } };
+    std::vector<element_type> Stack = { element_type { start_vertex, 
+                                          adj_list[start_vertex].begin() } };
     Stack.reserve(final_length+1);
 
     size_t num_paths = 0;
@@ -156,7 +141,9 @@ size_t backtracking_nonrecursive(AdjacencyList const &adj_list, Id start_vertex,
         if (ei != adj_list[current_vertex].end()) {
             next_vertex = *ei;
             if (!visited[next_vertex]) {
-                if (next_vertex != finish_vertex && current_length != final_length) {
+                if (next_vertex != finish_vertex 
+                        && current_length != final_length) 
+                {
                     // backup ei
                     std::get<1>(*si) = ei;
 
@@ -164,10 +151,12 @@ size_t backtracking_nonrecursive(AdjacencyList const &adj_list, Id start_vertex,
                     current_vertex = next_vertex;
                     visited[current_vertex] = true;
                     ei = adj_list[current_vertex].begin();
-                    *++si = std::make_tuple(current_vertex, ei);
+                    *++si = make_tuple(current_vertex, ei);
                     ++current_length;
 
-                } else if (next_vertex == finish_vertex && current_length == final_length) {
+                } else if (next_vertex == finish_vertex 
+                        && current_length == final_length) 
+                {
 #ifndef NDEBUG
                     auto _path = path;
                     for (auto _si = Stack.begin() + 1; _si != si; ++_si)
@@ -203,12 +192,13 @@ size_t backtracking_nonrecursive(AdjacencyList const &adj_list, Id start_vertex,
 
     return num_paths;
 }
-#endif //RECURSIVE
 
 #ifndef NDEBUG
-size_t find_kpaths_task(AdjacencyList const &adj_list, Id finish_vertex, size_t final_length, PathType &initial_path)
+size_t find_kpaths_task(AdjacencyList const &adj_list, Id finish_vertex, 
+                        size_t final_length, PathType &initial_path)
 #else
-size_t find_kpaths_task(AdjacencyList const &adj_list, Id finish_vertex, size_t final_length, PathType const &initial_path)
+size_t find_kpaths_task(AdjacencyList const &adj_list, Id finish_vertex, 
+                        size_t final_length, PathType const &initial_path)
 #endif
 {
     size_t num_paths = 0;
@@ -225,27 +215,22 @@ size_t find_kpaths_task(AdjacencyList const &adj_list, Id finish_vertex, size_t 
         for (auto v : initial_path) std::cerr << std::setw(2) << v << ' ';
         std::cerr << '\n';
     }
-#ifdef RECURSIVE
-    backtracking(initial_path.size(), initial_path.back(), visited, num_paths, initial_path);
-#else 
-    num_paths = backtracking_nonrecursive(adj_list, initial_path.back(), finish_vertex, final_length, initial_path.size(), visited, initial_path);
-#endif // RECURSIVE
+    num_paths = backtracking(adj_list, initial_path.back(), finish_vertex, 
+                    final_length, initial_path.size(), visited, initial_path);
 #ifdef _OPENMP
 #pragma omp critical
 #endif // _OPENMP
     std::cerr << "\nTask #" << task_num << ": " << num_paths << " paths\n";
 #else // NDEBUG
-#ifdef RECURSIVE
-    backtracking(initial_path.size(), initial_path.back(), visited, num_paths);
-#else
-    num_paths = backtracking_nonrecursive(adj_list, initial_path.back(), finish_vertex, final_length, initial_path.size(), visited);
-#endif // RECURSIVE
+    num_paths = backtracking(adj_list, initial_path.back(), finish_vertex, 
+                             final_length, initial_path.size(), visited);
 #endif // NDEBUG
     return num_paths;
 }
 
 #ifdef _OPENMP
-size_t scheduler(AdjacencyList const &adj_list, Id start_vertex, Id finish_vertex, Id final_length)
+size_t scheduler(AdjacencyList const &adj_list, Id start_vertex, 
+                 Id finish_vertex, Id final_length)
 {
     std::deque<PathType> init_paths = { {start_vertex} }, tmp;
 
@@ -260,7 +245,8 @@ size_t scheduler(AdjacencyList const &adj_list, Id start_vertex, Id finish_verte
             auto last_vertex = initial_path.back();
             for (auto next_vertex : adj_list[last_vertex])
                 if (next_vertex != finish_vertex && 
-                        std::find(initial_path.begin(), initial_path.end(), next_vertex) == initial_path.end()) 
+                    std::find(initial_path.begin(), initial_path.end(), 
+                                next_vertex) == initial_path.end() ) 
                 {
                     initial_path.push_back(next_vertex);
                     tmp.push_back(initial_path);
@@ -279,7 +265,8 @@ size_t scheduler(AdjacencyList const &adj_list, Id start_vertex, Id finish_verte
             for (auto it = init_paths.begin(); it != init_paths.end(); ++it) {
 #pragma omp task //shared(it)
                 { 
-                    auto _npaths = find_kpaths_task(adj_list, finish_vertex, final_length, *it);
+                    auto _npaths = find_kpaths_task(adj_list, finish_vertex, 
+                                                    final_length, *it);
 #pragma omp atomic update
                     npaths += _npaths;
                 }
