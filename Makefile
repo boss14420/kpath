@@ -1,4 +1,4 @@
-all: kpath kpath-parallel
+all: kpath kpath-parallel kpath-noloadbalancing
 
 CC ?= gcc
 CXX ?= g++
