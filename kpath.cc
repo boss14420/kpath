@@ -276,10 +276,12 @@ size_t scheduler(AdjacencyList const &adj_list, Id start_vertex,
         return std::find(ADJ.begin(), ADJ.end(), finish_vertex) != ADJ.end();
 
     size_t npaths = 0;
-#pragma omp parallel for reduction(+:npaths)
+#pragma omp parallel for reduction(+:npaths) schedule(dynamic, 1)
     for (size_t i = 0; i < ADJ.size(); ++i) {
-        PathType path { start_vertex, ADJ[i] };
-        npaths += find_kpaths_task(adj_list, finish_vertex, final_length, path);
+        if (ADJ[i] != finish_vertex) {
+            PathType path { start_vertex, ADJ[i] };
+            npaths += find_kpaths_task(adj_list, finish_vertex, final_length, path);
+        }
     }
 
     return npaths;
