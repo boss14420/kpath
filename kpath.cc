@@ -130,16 +130,15 @@ size_t backtracking(AdjacencyList const &adj_list, Id start_vertex,
     adjacency_iterator ai = adj_list[start_vertex].begin();
     auto si = Stack.begin() + 1;
 
-    #define RESTORE_STATE visited[current_vertex] = false; \
-                          std::tie(current_vertex, ai) = *--si; \
-                          --current_length
+    std::vector<bool> pred_of_finish(adj_list.size());
+    for (Id u = 0; u != adj_list.size(); ++u)
+        pred_of_finish[u] = std::find(adj_list[u].begin(), adj_list[u].end(), finish_vertex) != adj_list[u].end();
 
     while (si > Stack.begin()) {
         if (ai != adj_list[current_vertex].end()) {
             next_vertex = *ai; ++ai;
-            if (!visited[next_vertex]) {
-                if (next_vertex != finish_vertex 
-                        && current_length != final_length) 
+            if (!visited[next_vertex] && next_vertex != finish_vertex) {
+                if (current_length != final_length - 1)
                 {
                     // backup ai
                     std::get<1>(*si) = ai;
@@ -151,27 +150,29 @@ size_t backtracking(AdjacencyList const &adj_list, Id start_vertex,
                     *++si = make_tuple(current_vertex, ai);
                     ++current_length;
 
-                } else if (next_vertex == finish_vertex 
-                        && current_length == final_length) 
+                } else
                 {
 #ifndef NDEBUG
-                    auto _path = path;
-                    for (auto _si = Stack.begin() + 2; _si <= si; ++_si)
-                        _path.push_back(std::get<0>(*_si));
-                    _path.push_back(finish_vertex);
-                    increase_num_paths(num_paths, _path);
+                    if (pred_of_finish[next_vertex]) {
+                        auto _path = path;
+                        for (auto _si = Stack.begin() + 2; _si <= si; ++_si)
+                            _path.push_back(std::get<0>(*_si));
+                        _path.push_back(next_vertex);
+                        _path.push_back(finish_vertex);
+                        increase_num_paths(num_paths, _path);
+                    }
 #else
-                    increase_num_paths(num_paths);
+//                    increase_num_paths(num_paths);
+                    num_paths += pred_of_finish[next_vertex];
 #endif
-
-                    // backtrack
-                    RESTORE_STATE;
                 } 
             } 
 
         } else {
             // backtrack
-            RESTORE_STATE;
+            visited[current_vertex] = false;
+            std::tie(current_vertex, ai) = *--si;
+            --current_length;
         }
     }
 
