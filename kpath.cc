@@ -147,7 +147,7 @@ size_t backtracking(AdjacencyList const &adj_list, Id start_vertex,
                     current_vertex = next_vertex;
                     visited[current_vertex] = true;
                     ai = adj_list[current_vertex].begin();
-                    *++si = make_tuple(current_vertex, ai);
+                    *++si = std::make_tuple(current_vertex, ai);
                     ++current_length;
 
                 } else
